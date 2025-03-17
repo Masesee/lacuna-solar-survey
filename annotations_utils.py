@@ -41,7 +41,7 @@ def draw_annotations(image, annotations):
   cv2.polylines(image, [polygon_coords.reshape((-1, 1, 2))], isClosed = True, color=(255,0,0), thickness=2)
 
   poly = Polygon(polygon_coords)
-  centroids_x, centroid_y = map(int, poly.centroid.coords[0])
+  centroid_x, centroid_y = map(int, poly.centroid.coords[0])
 
   label = f"P: {nbr_pan}, B: {nbr_boil}, {placement}"
   cv2.putText(image, label, (centroid_x, centroid_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
