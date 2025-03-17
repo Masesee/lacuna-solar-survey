@@ -34,7 +34,7 @@ def process_data(csv_path, output_dir, display=False):
     annotations = (polygon_coords, row['pan_nbr'], row['boil_nbr'], row['placement'])
 
     image = load_image(img_path)
-    if img_path is None:
+    if image is None:
       continue
 
     annotated_image = draw_annotations(image, annotations)
