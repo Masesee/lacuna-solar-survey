@@ -46,6 +46,6 @@ def draw_annotations(image, annotations):
   label = f"P: {nbr_pan}, B: {nbr_boil}, {placement}"
   cv2.putText(image, label, (centroid_x, centroid_y), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1, cv2.LINE_AA)
 
-    return image
+  return image
 
   
