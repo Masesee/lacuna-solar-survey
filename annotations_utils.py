@@ -18,12 +18,31 @@ def load_image(img_path):
 
 # Convert polygon string to list to a proper list of tuples
 def parse_polygon(polygon_string):
-  """Parses a string representation of a polygon into a Numpy array"""
-  try:
-    return np.array(ast.literal_eval(polygon_string), np.int32)
-  except (SyntaxError, ValueError):
-    print(f"Failed to parse polygon: {polygon_str}")
-    return None
+    """Parses a string representation of a polygon into a Numpy array"""
+    if pd.isna(polygon_string) or not isinstance(polygon_string, str):
+        print(f"Invalid polygon data: {polygon_string}")
+        return None
+        
+    try:
+        # Clean the string and ensure it's properly formatted
+        clean_str = polygon_string.strip()
+        if not (clean_str.startswith('[') and clean_str.endswith(']')):
+            print(f"Malformed polygon string: {polygon_string}")
+            return None
+            
+        parsed_data = ast.literal_eval(clean_str)
+        
+        # Verify it's a list of coordinate pairs
+        if not all(isinstance(item, (list, tuple)) and len(item) == 2 for item in parsed_data):
+            print(f"Polygon data is not a list of coordinate pairs: {parsed_data}")
+            return None
+            
+        return np.array(parsed_data, np.int32)
+        
+    except (SyntaxError, ValueError) as e:
+        print(f"Failed to parse polygon: {polygon_string}")
+        print(f"Error: {e}")
+        return None
 
 # Draw polygons and labels
 def draw_annotations(image, annotations):
