@@ -19,7 +19,7 @@ os.makedirs(OUTPUT_TRAIN_DIR, exist_ok=True)
 os.makedirs(OUTPUT_TEST_DIR, exist_ok=True)
 
 # Preprocess dataset using csv
-def preprocess_data(csv_path, output_dir, display=False):
+def process_data(csv_path, output_dir, display=False):
   """Preprocess a dataset by loading images, parsing annotations, drawing them, and saving the results"""
   df = pd.read_csv(csv_path)
 
