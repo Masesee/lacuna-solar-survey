@@ -4,7 +4,7 @@ import numpy as np
 import ast
 import pandas as pd
 import matplotlib.pyplot as plt
-from shapely.geometry as Polygon
+from shapely.geometry import Polygon
 
 # Function to load an image 
 def load_image(img_path):
