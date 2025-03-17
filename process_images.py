@@ -51,8 +51,8 @@ def process_data(csv_path, output_dir, display=False):
 if __name__ == "__main__":
   # Process training dataset
   print('Processing training dataset...')
-  process_dataset(TRAIN_CSV_PATH, OUTPUT_TRAIN_DIR, display=False)
+  process_data(TRAIN_CSV_PATH, OUTPUT_TRAIN_DIR, display=False)
 
   # Process test dataset
   print("Processing test dataset...")
-  process_dataset(TEST_CSV_PATH, OUTPUT_TEST_DIR, display=False)
+  process_data(TEST_CSV_PATH, OUTPUT_TEST_DIR, display=False)
