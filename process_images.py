@@ -23,6 +23,11 @@ def process_data(csv_path, output_dir, display=False):
   """Preprocess a dataset by loading images, parsing annotations, drawing them, and saving the results"""
   df = pd.read_csv(csv_path)
 
+  # Debug: Print first few polygon values
+  print("Sample polygon values:")
+  for i, poly in enumerate(df['polygon'].head(3)):
+    print(f"  {i}: {poly} (type: {type(poly)})")
+
   for _, row in df.iterrows():
     image_name = row['ID'] + '.jpg'
     img_path = os.path.join(IMAGE_DIR, image_name)
