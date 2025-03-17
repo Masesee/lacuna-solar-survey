@@ -12,9 +12,9 @@ def load_image(img_path):
   if not os.path.exists(img_path):
     print(f"Image not found: {img_path}")
     return None
-    img = cv2.imread(img_path)
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    return img
+  img = cv2.imread(img_path)
+  img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+  return img
 
 # Convert polygon string to list to a proper list of tuples
 def parse_polygon(polygon_string):
