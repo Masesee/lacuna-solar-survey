@@ -308,12 +308,16 @@ if __name__ == "__main__":
                         help="Learning rate")
     parser.add_argument("--img_size", type=int, default=512,
                         help="Image size for resizing")
-    
+    parser.add_argument("--val_split", type=float, default=0.2,
+                        help="Validation split size")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed")
+
     args = parser.parse_args()
-    
+
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
-    
+
     # Train the selected model
     if args.model_type == "counter":
         train_counter_model(args)
