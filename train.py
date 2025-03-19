@@ -48,7 +48,7 @@ def train_counter_model(args):
     
     # Initialize the model
     print("Initializing the model...")
-    model = SolarPanelCounter().to(device)
+    model = SolarPanelCounter(num_classes=args.num_classes).to(device)
 
     # Loss and optimizer
     criterion = nn.SmoothL1Loss()
