@@ -108,24 +108,17 @@ def get_transforms(mode='train', img_size=512):
             ToTensorV2()
         ])
 
-def get_dataloaders(train_csv, img_dir, batch_size=8, dataset_type="counter", img_size=512, val_split=0.2, seed=42):
+def get_dataloaders(train_csv, val_csv, img_dir, batch_size=8, dataset_type="counter", img_size=512, seed=42):
     """
-    Create train and validation dataloaders by splitting the training dataset.
+    Create train and validation dataloaders from separate CSV files.
     """
     set_seed(seed)
 
     if dataset_type == "counter":
-        dataset = SolarPanelDataset(train_csv, img_dir, transform=get_transforms('train', img_size))
+        train_dataset = SolarPanelDataset(train_csv, img_dir, transform=get_transforms('train', img_size))
+        val_dataset = SolarPanelDataset(val_csv, img_dir, transform=get_transforms('val', img_size))
     else:
         raise ValueError(f"Unknown dataset type: {dataset_type}")
-
-    # Split dataset into training and validation subsets
-    val_size = int(len(dataset) * val_split)
-    train_size = len(dataset) - val_size
-    train_dataset, val_dataset = random_split(dataset, [train_size, val_size], generator=torch.Generator().manual_seed(seed))
-
-    # Update transforms for validation dataset
-    val_dataset.dataset.transform = get_transforms('val', img_size)
 
     train_loader = DataLoader(
         train_dataset,
