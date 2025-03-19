@@ -51,7 +51,7 @@ def train_counter_model(args):
     model = SolarPanelCounter().to(device)
 
     # Loss and optimizer
-    criterion = nn.Smooth1Loss()
+    criterion = nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
     
