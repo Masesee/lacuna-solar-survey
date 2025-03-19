@@ -41,7 +41,7 @@ def train_counter_model(args):
         os.path.join(args.output_dir, "train_split.csv"),
         os.path.join(args.output_dir, "val_split.csv"),
         args.img_dir,
-        batch_size=args.batch_size,
+        args.batch_size,
         dataset_type="counter",
         img_size=args.img_size
         )
