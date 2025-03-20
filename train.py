@@ -41,17 +41,17 @@ def train_counter_model(args):
         os.path.join(args.output_dir, "train_split.csv"),
         os.path.join(args.output_dir, "val_split.csv"),
         args.img_dir,
-        args.batch_size,
+        batch_size=args.batch_size,
         dataset_type="counter",
         img_size=args.img_size
         )
     
     # Initialize the model
     print("Initializing the model...")
-    model = SolarPanelCounter(num_classes=args.num_classes).to(device)
+    model = SolarPanelCounter(num_classes=args.num_classes).to(device)  # Pass num_classes here
 
     # Loss and optimizer
-    criterion = nn.SmoothL1Loss()
+    criterion = nn.SmoothL1Loss()  # Fix typo: should be nn.SmoothL1Loss()
     optimizer = optim.Adam(model.parameters(), lr=args.learning_rate)
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
     
@@ -308,16 +308,15 @@ if __name__ == "__main__":
                         help="Learning rate")
     parser.add_argument("--img_size", type=int, default=512,
                         help="Image size for resizing")
-    parser.add_argument("--val_split", type=float, default=0.2,
-                        help="Validation split size")
-    parser.add_argument("--seed", type=int, default=42,
-                        help="Random seed")
-
+    parser.add_argument("--num_classes", type=int, default=2,  # Add num_classes argument
+                        help="Number of output classes for the model")
+    
+    
     args = parser.parse_args()
-
+    
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
-
+    
     # Train the selected model
     if args.model_type == "counter":
         train_counter_model(args)
