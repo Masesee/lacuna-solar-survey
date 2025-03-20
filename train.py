@@ -87,7 +87,7 @@ def train_counter_model(args):
             train_loss += loss.item()
             progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
         
-        train_loss /= len(train_loader)
+        train_loss /= len(train_dataloader)  # Fix: use train_dataloader
         train_losses.append(train_loss)
         
         # Validation phase
@@ -115,9 +115,9 @@ def train_counter_model(args):
                 
                 val_loss += loss.item()
         
-        val_loss /= len(val_loader)
-        panel_mae /= len(val_loader)
-        boiler_mae /= len(val_loader)
+        val_loss /= len(val_dataloader)  # Fix: use val_dataloader
+        panel_mae /= len(val_dataloader)  # Fix: use val_dataloader
+        boiler_mae /= len(val_dataloader)  # Fix: use val_dataloader
         val_losses.append(val_loss)
         
         # Update learning rate
@@ -179,7 +179,7 @@ def train_segmentation_model(args):
     print(f"Validation set: {len(val_df)} samples")
     
     # Create dataloaders
-    train_loader, val_loader = get_dataloaders(
+    train_dataloader, val_dataloader = get_dataloaders(  # Fix: rename variables
         os.path.join(args.output_dir, 'train_split.csv'), 
         os.path.join(args.output_dir, 'val_split.csv'),
         args.img_dir,
@@ -210,7 +210,7 @@ def train_segmentation_model(args):
         model.train()
         train_loss = 0.0
         
-        progress_bar = tqdm(train_loader)
+        progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
         for batch in progress_bar:
             images = batch["image"].to(device)
             masks = batch["mask"].to(device)
@@ -229,7 +229,7 @@ def train_segmentation_model(args):
             train_loss += loss.item()
             progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
         
-        train_loss /= len(train_loader)
+        train_loss /= len(train_dataloader)  # Fix: use train_dataloader
         train_losses.append(train_loss)
         
         # Validation phase
@@ -237,7 +237,7 @@ def train_segmentation_model(args):
         val_loss = 0.0
         
         with torch.no_grad():
-            for batch in tqdm(val_loader, desc="Validating"):
+            for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
                 images = batch["image"].to(device)
                 masks = batch["mask"].to(device)
                 
@@ -248,7 +248,7 @@ def train_segmentation_model(args):
                 loss = criterion(outputs, masks)
                 val_loss += loss.item()
         
-        val_loss /= len(val_loader)
+        val_loss /= len(val_dataloader)  # Fix: use val_dataloader
         val_losses.append(val_loss)
         
         # Update learning rate
