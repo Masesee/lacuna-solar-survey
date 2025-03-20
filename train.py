@@ -66,7 +66,7 @@ def train_counter_model(args):
         model.train()
         train_loss = 0.0
         
-        progress_bar = tqdm(train_loader)
+        progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
         for batch in progress_bar:
             images = batch["image"].to(device)
             targets = batch["counts"].to(device)
@@ -97,7 +97,7 @@ def train_counter_model(args):
         boiler_mae = 0.0
         
         with torch.no_grad():
-            for batch in tqdm(val_loader, desc="Validating"):
+            for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
                 images = batch["image"].to(device)
                 targets = batch["counts"].to(device)
                 
