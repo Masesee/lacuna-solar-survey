@@ -312,6 +312,8 @@ if __name__ == "__main__":
                         help="Number of output classes for the model")
     parser.add_argument("--val_split", type=float, default=0.2,
                         help="Proportion of the dataset to use for validation (if val_csv is not provided)")
+    parser.add_argument("--seed", type=int, default=42,
+                        help="Random seed for reproducibility")
     
     
     args = parser.parse_args()
