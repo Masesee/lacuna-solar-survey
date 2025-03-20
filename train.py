@@ -310,6 +310,8 @@ if __name__ == "__main__":
                         help="Image size for resizing")
     parser.add_argument("--num_classes", type=int, default=2,  # Add num_classes argument
                         help="Number of output classes for the model")
+    parser.add_argument("--val_split", type=float, default=0.2,
+                        help="Proportion of the dataset to use for validation (if val_csv is not provided)")
     
     
     args = parser.parse_args()
