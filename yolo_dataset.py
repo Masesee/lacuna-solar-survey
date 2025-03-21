@@ -3,6 +3,7 @@ import shutil
 import pandas as pd
 import numpy as np
 from shapely.geometry import Polygon
+from PIL import Image
 
 def convert_to_yolo_format(polygon_str, img_width, img_height):
     """Convert polygon coordinates to YOLO format (x_center, y_center, width, height)"""
@@ -32,6 +33,7 @@ def prepare_yolo_dataset(csv_path, img_dir, output_dir, split_ratio=0.2):
     train_df = df.iloc[:-val_size]
     val_df = df.iloc[-val_size:]
 
+    processed_count = 0
     for split, split_df in zip(['train', 'val'], [train_df, val_df]):
         for idx, row in split_df.iterrows():
             img_id = row['ID']
@@ -42,18 +44,26 @@ def prepare_yolo_dataset(csv_path, img_dir, output_dir, split_ratio=0.2):
                 print(f"Image not found: {img_path}")
                 continue
             
-            # Copy image to YOLO directory
-            shutil.copy(img_path, os.path.join(output_dir, f'images/{split}', f"{img_id}.jpg"))
-            
-            # Convert polygon to YOLO format
             try:
-                x_center, y_center, width, height = convert_to_yolo_format(polygon_str, row['width'], row['height'])
+                # Get image dimensions
+                with Image.open(img_path) as img:
+                    img_width, img_height = img.size
+                
+                # Copy image to YOLO directory
+                shutil.copy(img_path, os.path.join(output_dir, f'images/{split}', f"{img_id}.jpg"))
+                
+                # Convert polygon to YOLO format
+                x_center, y_center, width, height = convert_to_yolo_format(polygon_str, img_width, img_height)
                 label_path = os.path.join(output_dir, f'labels/{split}', f"{img_id}.txt")
                 with open(label_path, 'w') as f:
                     f.write(f"0 {x_center} {y_center} {width} {height}\n")
-                print(f"Processed {img_id} for {split}")
+                processed_count += 1
+                if processed_count % 100 == 0:
+                    print(f"Processed {processed_count} images")
             except Exception as e:
-                print(f"Error processing {img_id}: {e}")
+                print(f"Error processing {img_id}: {str(e)}")
+
+    print(f"Successfully processed {processed_count} images")
 
 if __name__ == "__main__":
     import argparse
