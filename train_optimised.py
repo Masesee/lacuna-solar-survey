@@ -27,8 +27,17 @@ else:
     device = torch.device("cpu")
     print("No GPU available, using CPU")
 
+# Add memory management
+def clear_gpu_memory():
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.reset_peak_memory_stats()
+
 def train_counter_model(args):
     """Train a model that counts solar panels and boilers"""
+    # Clear GPU memory before starting
+    clear_gpu_memory()
+    
     # Enable automatic mixed precision for faster training
     scaler = torch.cuda.amp.GradScaler()
     
@@ -73,84 +82,96 @@ def train_counter_model(args):
     val_losses = []
     
     print("Starting training...")
-    for epoch in range(args.epochs):
-        # Training phase
-        model.train()
-        train_loss = 0.0
-        
-        progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
-        for batch in progress_bar:
-            images = batch["image"].to(device, non_blocking=True)  # Add non_blocking=True
-            targets = batch["counts"].to(device, non_blocking=True)
+    try:
+        for epoch in range(args.epochs):
+            # Training phase
+            model.train()
+            train_loss = 0.0
             
-            # Use automatic mixed precision
-            with torch.cuda.amp.autocast():
-                # Forward pass
-                optimizer.zero_grad()
-                panel_pred, boiler_pred = model(images)
-                
-                # Compute loss
-                panel_loss = criterion(panel_pred.squeeze(), targets[:, 0])
-                boiler_loss = criterion(boiler_pred.squeeze(), targets[:, 1])
-                loss = panel_loss + boiler_loss
-            
-            # Backward pass with scaled gradients
-            scaler.scale(loss).backward()
-            scaler.step(optimizer)
-            scaler.update()
-            
-            train_loss += loss.item()
-            progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
-        
-        train_loss /= len(train_dataloader)  # Fix: use train_dataloader
-        train_losses.append(train_loss)
-        
-        # Validation phase
-        model.eval()
-        val_loss = 0.0
-        panel_mae = 0.0
-        boiler_mae = 0.0
-        
-        with torch.no_grad(), torch.cuda.amp.autocast():  # Add autocast here too
-            for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
-                images = batch["image"].to(device, non_blocking=True)
+            progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
+            for batch in progress_bar:
+                images = batch["image"].to(device, non_blocking=True)  # Add non_blocking=True
                 targets = batch["counts"].to(device, non_blocking=True)
                 
-                # Forward pass
-                panel_pred, boiler_pred = model(images)
+                # Use automatic mixed precision
+                with torch.cuda.amp.autocast():
+                    # Forward pass
+                    optimizer.zero_grad(set_to_none=True)  # More efficient than False
+                    panel_pred, boiler_pred = model(images)
+                    
+                    # Compute loss
+                    panel_loss = criterion(panel_pred.squeeze(), targets[:, 0])
+                    boiler_loss = criterion(boiler_pred.squeeze(), targets[:, 1])
+                    loss = panel_loss + boiler_loss
                 
-                # Compute loss
-                panel_loss = criterion(panel_pred.squeeze(), targets[:, 0])
-                boiler_loss = criterion(boiler_pred.squeeze(), targets[:, 1])
-                loss = panel_loss + boiler_loss
+                # Backward pass with scaled gradients
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
                 
-                # Compute MAE
-                panel_mae += torch.abs(panel_pred.squeeze() - targets[:, 0]).mean().item()
-                boiler_mae += torch.abs(boiler_pred.squeeze() - targets[:, 1]).mean().item()
-                
-                val_loss += loss.item()
-        
-        val_loss /= len(val_dataloader)  # Fix: use val_dataloader
-        panel_mae /= len(val_dataloader)  # Fix: use val_dataloader
-        boiler_mae /= len(val_dataloader)  # Fix: use val_dataloader
-        val_losses.append(val_loss)
-        
-        # Update learning rate
-        scheduler.step(val_loss)
-        
-        print(f"Epoch {epoch+1}/{args.epochs}, Train Loss: {train_loss:.4f}, "
-              f"Val Loss: {val_loss:.4f}, Panel MAE: {panel_mae:.4f}, Boiler MAE: {boiler_mae:.4f}")
-        
-        # Save best model
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': best_val_loss,
-            }, os.path.join(args.output_dir, 'best_counter_model.pth'))
-            print(f"Saved best model with validation loss: {best_val_loss:.4f}")
+                train_loss += loss.item()
+                progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
+            
+            train_loss /= len(train_dataloader)  # Fix: use train_dataloader
+            train_losses.append(train_loss)
+            
+            # Validation phase
+            model.eval()
+            val_loss = 0.0
+            panel_mae = 0.0
+            boiler_mae = 0.0
+            
+            with torch.no_grad(), torch.cuda.amp.autocast():  # Add autocast here too
+                for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
+                    images = batch["image"].to(device, non_blocking=True)
+                    targets = batch["counts"].to(device, non_blocking=True)
+                    
+                    # Forward pass
+                    panel_pred, boiler_pred = model(images)
+                    
+                    # Compute loss
+                    panel_loss = criterion(panel_pred.squeeze(), targets[:, 0])
+                    boiler_loss = criterion(boiler_pred.squeeze(), targets[:, 1])
+                    loss = panel_loss + boiler_loss
+                    
+                    # Compute MAE
+                    panel_mae += torch.abs(panel_pred.squeeze() - targets[:, 0]).mean().item()
+                    boiler_mae += torch.abs(boiler_pred.squeeze() - targets[:, 1]).mean().item()
+                    
+                    val_loss += loss.item()
+            
+            val_loss /= len(val_dataloader)  # Fix: use val_dataloader
+            panel_mae /= len(val_dataloader)  # Fix: use val_dataloader
+            boiler_mae /= len(val_dataloader)  # Fix: use val_dataloader
+            val_losses.append(val_loss)
+            
+            # Update learning rate
+            scheduler.step(val_loss)
+            
+            print(f"Epoch {epoch+1}/{args.epochs}, Train Loss: {train_loss:.4f}, "
+                  f"Val Loss: {val_loss:.4f}, Panel MAE: {panel_mae:.4f}, Boiler MAE: {boiler_mae:.4f}")
+            
+            # Save best model
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': best_val_loss,
+                }, os.path.join(args.output_dir, 'best_counter_model.pth'))
+                print(f"Saved best model with validation loss: {best_val_loss:.4f}")
+            
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()  # Ensure CUDA operations are synchronized
+
+    except RuntimeError as e:
+        if "out of memory" in str(e):
+            print("WARNING: out of memory")
+            if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache()
+        else:
+            raise e
     
     # Save final model
     torch.save({
@@ -174,6 +195,12 @@ def train_counter_model(args):
 
 def train_segmentation_model(args):
     """Train a segmentation model for solar panel regions"""
+    # Clear GPU memory before starting
+    clear_gpu_memory()
+    
+    # Enable automatic mixed precision for faster training
+    scaler = torch.cuda.amp.GradScaler()
+    
     print("Loading data...")
     # Split data into train and validation
     df = pd.read_csv(args.train_csv)
@@ -220,67 +247,82 @@ def train_segmentation_model(args):
     val_losses = []
     
     print("Starting training...")
-    for epoch in range(args.epochs):
-        # Training phase
-        model.train()
-        train_loss = 0.0
-        
-        progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
-        for batch in progress_bar:
-            images = batch["image"].to(device)
-            masks = batch["mask"].to(device)
+    try:
+        for epoch in range(args.epochs):
+            # Training phase
+            model.train()
+            train_loss = 0.0
             
-            # Forward pass
-            optimizer.zero_grad()
-            outputs = model(images)
-            
-            # Compute loss
-            loss = criterion(outputs, masks)
-            
-            # Backward pass
-            loss.backward()
-            optimizer.step()
-            
-            train_loss += loss.item()
-            progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
-        
-        train_loss /= len(train_dataloader)  # Fix: use train_dataloader
-        train_losses.append(train_loss)
-        
-        # Validation phase
-        model.eval()
-        val_loss = 0.0
-        
-        with torch.no_grad():
-            for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
+            progress_bar = tqdm(train_dataloader)  # Fix: use train_dataloader
+            for batch in progress_bar:
                 images = batch["image"].to(device)
                 masks = batch["mask"].to(device)
                 
-                # Forward pass
-                outputs = model(images)
+                # Use automatic mixed precision
+                with torch.cuda.amp.autocast():
+                    # Forward pass
+                    optimizer.zero_grad(set_to_none=True)
+                    outputs = model(images)
+                    
+                    # Compute loss
+                    loss = criterion(outputs, masks)
                 
-                # Compute loss
-                loss = criterion(outputs, masks)
-                val_loss += loss.item()
-        
-        val_loss /= len(val_dataloader)  # Fix: use val_dataloader
-        val_losses.append(val_loss)
-        
-        # Update learning rate
-        scheduler.step(val_loss)
-        
-        print(f"Epoch {epoch+1}/{args.epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
-        
-        # Save best model
-        if val_loss < best_val_loss:
-            best_val_loss = val_loss
-            torch.save({
-                'epoch': epoch,
-                'model_state_dict': model.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'loss': best_val_loss,
-            }, os.path.join(args.output_dir, 'best_segmentation_model.pth'))
-            print(f"Saved best model with validation loss: {best_val_loss:.4f}")
+                # Backward pass with scaled gradients
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
+                
+                train_loss += loss.item()
+                progress_bar.set_description(f"Epoch {epoch+1}/{args.epochs} [Train Loss: {loss.item():.4f}]")
+            
+            train_loss /= len(train_dataloader)  # Fix: use train_dataloader
+            train_losses.append(train_loss)
+            
+            # Validation phase
+            model.eval()
+            val_loss = 0.0
+            
+            with torch.no_grad():
+                for batch in tqdm(val_dataloader, desc="Validating"):  # Fix: use val_dataloader
+                    images = batch["image"].to(device)
+                    masks = batch["mask"].to(device)
+                    
+                    # Forward pass
+                    outputs = model(images)
+                    
+                    # Compute loss
+                    loss = criterion(outputs, masks)
+                    val_loss += loss.item()
+            
+            val_loss /= len(val_dataloader)  # Fix: use val_dataloader
+            val_losses.append(val_loss)
+            
+            # Update learning rate
+            scheduler.step(val_loss)
+            
+            print(f"Epoch {epoch+1}/{args.epochs}, Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+            
+            # Save best model
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                torch.save({
+                    'epoch': epoch,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': best_val_loss,
+                }, os.path.join(args.output_dir, 'best_segmentation_model.pth'))
+                print(f"Saved best model with validation loss: {best_val_loss:.4f}")
+            
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()  # Ensure CUDA operations are synchronized
+
+    except RuntimeError as e:
+        if "out of memory" in str(e):
+            print("WARNING: out of memory")
+            if hasattr(torch.cuda, 'empty_cache'):
+                torch.cuda.empty_cache()
+        else:
+            raise e
     
     # Save final model
     torch.save({
@@ -303,6 +345,7 @@ def train_segmentation_model(args):
     print("Training completed!")
 
 if __name__ == "__main__":
+    # Add GPU-specific arguments
     parser = argparse.ArgumentParser(description="Train solar panel detection models")
     parser.add_argument("--model_type", type=str, default="counter", 
                         choices=["counter", "segmentation"],
@@ -329,9 +372,20 @@ if __name__ == "__main__":
                         help="Proportion of the dataset to use for validation (if val_csv is not provided)")
     parser.add_argument("--seed", type=int, default=42,
                         help="Random seed for reproducibility")
-    
+    parser.add_argument("--num_workers", type=int, default=4,
+                        help="Number of data loading workers")
+    parser.add_argument("--pin_memory", type=bool, default=True,
+                        help="Pin memory for faster GPU transfer")
     
     args = parser.parse_args()
+    
+    # Verify CUDA is available and working
+    if torch.cuda.is_available():
+        try:
+            torch.cuda.init()
+        except RuntimeError as e:
+            print(f"CUDA initialization failed: {e}")
+            sys.exit(1)
     
     # Create output directory if it doesn't exist
     os.makedirs(args.output_dir, exist_ok=True)
