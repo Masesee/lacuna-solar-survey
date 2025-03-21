@@ -33,6 +33,51 @@ def clear_gpu_memory():
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats()
 
+def get_model(model_type, **kwargs):
+    """Factory function to create models"""
+    if model_type == "counter":
+        return SolarPanelCounter(**kwargs)
+    elif model_type == "segmentation":
+        return SolarSegmentationModel(**kwargs)
+    elif model_type == "yolo":
+        return YOLOSolarDetector(**kwargs)
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+
+def train_model(args):
+    """Generic training function for any model type"""
+    clear_gpu_memory()
+    
+    if args.model_type == "yolo":
+        # Prepare YOLO dataset
+        print("Preparing YOLO dataset...")
+        yolo_data_yaml = prepare_yolo_dataset(
+            args.train_csv,
+            args.img_dir,
+            os.path.join(args.output_dir, 'yolo_dataset'),
+            split_ratio=args.val_split
+        )
+        args.data_yaml = yolo_data_yaml
+    
+    # Initialize model
+    model = get_model(args.model_type, **vars(args))
+    model = model.to(device)
+    
+    # Get model-specific components
+    criterion = model.get_loss_fn()
+    optimizer = model.get_optimizer(args.learning_rate)
+    metrics = model.get_metrics()
+    
+    if args.model_type == "yolo":
+        # Use YOLO's native training method
+        model.train_model(args.data_yaml)
+    else:
+        # Use custom training loop
+        if args.model_type == "counter":
+            train_counter_model(args)
+        elif args.model_type == "segmentation":
+            train_segmentation_model(args)
+
 def train_counter_model(args):
     """Train a model that counts solar panels and boilers"""
     # Clear GPU memory before starting
@@ -348,7 +393,7 @@ if __name__ == "__main__":
     # Add GPU-specific arguments
     parser = argparse.ArgumentParser(description="Train solar panel detection models")
     parser.add_argument("--model_type", type=str, default="counter", 
-                        choices=["counter", "segmentation"],
+                        choices=["counter", "segmentation", "yolo"],
                         help="Model type to train (counter or segmentation)")
     parser.add_argument("--train_csv", type=str, required=True,
                         help="Path to training CSV file")
@@ -376,6 +421,11 @@ if __name__ == "__main__":
                         help="Number of data loading workers")
     parser.add_argument("--pin_memory", type=bool, default=True,
                         help="Pin memory for faster GPU transfer")
+    parser.add_argument("--data_yaml", type=str, default="",
+                        help="Path to YOLO data.yaml file (required for YOLO training)")
+    parser.add_argument("--model_size", type=str, default="s",
+                        choices=["n", "s", "m", "l", "x"],
+                        help="YOLO model size (nano to extra large)")
     
     args = parser.parse_args()
     
@@ -391,9 +441,4 @@ if __name__ == "__main__":
     os.makedirs(args.output_dir, exist_ok=True)
     
     # Train the selected model
-    if args.model_type == "counter":
-        train_counter_model(args)
-    elif args.model_type == "segmentation":
-        train_segmentation_model(args)
-    else:
-        print(f"Unknown model type: {args.model_type}")
+    train_model(args)
