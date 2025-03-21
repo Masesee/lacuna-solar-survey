@@ -29,4 +29,4 @@ Dataset Link: [Dataset](https://www.kaggle.com/datasets/kimp1995/lacuna-solar-su
   - ``python evaluate.py --model_path ./output/best_counter_model.pth --train_csv ./data/train.csv --val_csv ./data/val.csv --img_dir ./images --batch_size 16 --img_size 512``
 
 - predict.py
-  - ``python predict.py --model_type segmentation --model_path ./output/best_segmentation_model.pth --test_csv ./data/test.csv --img_dir ./data/images --output_dir ./predictions --batch_size 16 --img_size 512``
+  - ``python predict.py --model_type segmentation --model_path ./output/best_segmentation_model.pth --test_csv ./data/test.csv --img_dir ./data/images --output_dir ./predictions --batch_size 16 --img_size 512 --mode segmentation``
