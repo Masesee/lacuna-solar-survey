@@ -4,17 +4,45 @@ import pandas as pd
 import numpy as np
 from shapely.geometry import Polygon
 from PIL import Image
+import re
 
 def convert_to_yolo_format(polygon_str, img_width, img_height):
     """Convert polygon coordinates to YOLO format (x_center, y_center, width, height)"""
-    coords = np.array([float(x) for x in polygon_str.strip('[]').split(',')]).reshape(-1, 2)
-    polygon = Polygon(coords)
-    minx, miny, maxx, maxy = polygon.bounds
-    x_center = ((minx + maxx) / 2) / img_width
-    y_center = ((miny + maxy) / 2) / img_height
-    width = (maxx - minx) / img_width
-    height = (maxy - miny) / img_height
-    return x_center, y_center, width, height
+    # Clean and parse the polygon string
+    # Remove all brackets, parentheses and split by any delimiter
+    clean_str = re.sub(r'[\[\]\(\)]', '', polygon_str)
+    coords_str = re.split(r'[,\s]+', clean_str)
+    coords_str = [s for s in coords_str if s.strip()]  # Remove empty strings
+    
+    try:
+        # Convert to float and reshape
+        coords = np.array([float(x) for x in coords_str]).reshape(-1, 2)
+        
+        # Validate coordinates
+        if len(coords) < 3:  # Minimum 3 points needed for a polygon
+            raise ValueError("Not enough coordinates for a polygon")
+            
+        polygon = Polygon(coords)
+        minx, miny, maxx, maxy = polygon.bounds
+        
+        # Ensure coordinates are within image bounds
+        minx = max(0, minx)
+        miny = max(0, miny)
+        maxx = min(img_width, maxx)
+        maxy = min(img_height, maxy)
+        
+        x_center = ((minx + maxx) / 2) / img_width
+        y_center = ((miny + maxy) / 2) / img_height
+        width = (maxx - minx) / img_width
+        height = (maxy - miny) / img_height
+        
+        # Validate normalized coordinates
+        if not all(0 <= x <= 1 for x in [x_center, y_center, width, height]):
+            raise ValueError("Normalized coordinates out of bounds")
+            
+        return x_center, y_center, width, height
+    except Exception as e:
+        raise ValueError(f"Failed to parse polygon coordinates: {str(e)}\nPolygon string: {polygon_str}")
 
 def prepare_yolo_dataset(csv_path, img_dir, output_dir, split_ratio=0.2):
     """Prepare dataset in YOLO format"""
