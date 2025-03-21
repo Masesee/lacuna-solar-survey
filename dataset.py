@@ -91,7 +91,7 @@ class SolarPanelDataset(Dataset):
 
 def get_transforms(mode='train', img_size=512):
     """Get transforms for training and validation/testing"""
-    if mode == 'train':
+    if (mode == 'train'):
         return A.Compose([
             A.Resize(img_size, img_size),
             A.HorizontalFlip(p=0.5),
@@ -125,7 +125,9 @@ def get_dataloaders(train_csv, val_csv, img_dir, batch_size=8, dataset_type="cou
         batch_size=batch_size,
         shuffle=True,
         num_workers=4,
-        pin_memory=True
+        pin_memory=True,
+        persistent_workers=True,  # Add this for better GPU utilization
+        prefetch_factor=2  # Add this for better data loading
     )
 
     val_loader = DataLoader(
@@ -133,7 +135,9 @@ def get_dataloaders(train_csv, val_csv, img_dir, batch_size=8, dataset_type="cou
         batch_size=batch_size,
         shuffle=False,
         num_workers=4,
-        pin_memory=True
+        pin_memory=True,
+        persistent_workers=True,  # Add this for better GPU utilization
+        prefetch_factor=2  # Add this for better data loading
     )
 
     return train_loader, val_loader
