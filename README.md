@@ -1,4 +1,17 @@
 # Lacuna Solar Survey project
+A Python-based tool for processing and preparing solar panel image datasets for YOLO object detection training.
+
+## Project Overview
+
+This project prepares a dataset of solar panel images and their polygon annotations for training YOLO object detection models. It converts polygon coordinates to YOLO format (normalized bounding box coordinates) and organizes the dataset into training and validation sets.
+
+## Features
+
+- Converts polygon annotations
+- Automatically splits dataset into training and validation sets
+- Handles various polygon coordinate formats
+- Preserves aspect ratios and image dimensions
+- Built-in validation and error handling
 
 ## Wiki
 #### 1. annotation_utils.py
